@@ -81,11 +81,11 @@ int main(void)
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
-	glEnable(GL_DEPTH_TEST);
+	// glEnable(GL_DEPTH_TEST);
 
 	/* 启用混合(默认不会启用) */
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	// glEnable(GL_BLEND);
+	// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
 	std::cout << glGetString(GL_VERSION) << std::endl;

@@ -24,14 +24,18 @@ public:
 private:
     std::unique_ptr<VertexArray> m_VAO;
     std::unique_ptr<VertexArray> planeVAO;
+    std::unique_ptr<VertexArray> grassVAO;
+
     std::unique_ptr<IndexBuffer> m_IB;
     std::unique_ptr<Shader> shader;
     std::unique_ptr<Shader> planeShader;
-    std::unique_ptr<Texture> texture;
-    std::unique_ptr<Texture> texture2;
+    std::unique_ptr<Shader> grassShader;
+    std::unique_ptr<Texture> cubeTexture;
+    std::unique_ptr<Texture> planeTexture;
+    std::unique_ptr<Texture> grassTexture;
     std::unique_ptr<VertexBuffer> m_VB;
     std::unique_ptr<VertexBuffer> m_planeVB;
-
+    std::unique_ptr<VertexBuffer> m_grassVB;
 
     glm::mat4 m_Project;
     glm::mat4 m_View;

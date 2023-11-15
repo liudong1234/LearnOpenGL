@@ -6,11 +6,11 @@
 #include "imgui/imgui_impl_opengl3.h"
 #include <iostream>
 #include <memory>
-///ÐÄµÃ
-///µ±³ÌÐòÖÐ±¨Warning: uniform viewPos doesn't exist 
+///ï¿½Äµï¿½
+///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ï¿½Warning: uniform viewPos doesn't exist 
 /// Warning: uniform material.shininess doesn't exist
-/// ÀàËÆµÄ´íÎó£¬Õâ²»ÊÇÃ»ÓÐÕÒµ½Õâ¸ö±äÁ¿£¬¶øÊÇÕÒµ½ÁË£¬µ«ÊÇºóÃæµÄ´úÂëÃ»ÓÐÓÃµ½±äÁ¿µÄÖµ£¬ÒÔÖÁÓÚÏµÍ³½«ËüÃÇ
-/// ÓÅ»¯
+/// ï¿½ï¿½ï¿½ÆµÄ´ï¿½ï¿½ï¿½ï¿½â²»ï¿½ï¿½Ã»ï¿½ï¿½ï¿½Òµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òµï¿½ï¿½Ë£ï¿½ï¿½ï¿½ï¿½Çºï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½Ãµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÏµÍ³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+/// ï¿½Å»ï¿½
 
 
 #define TYPE 0
@@ -25,7 +25,7 @@ namespace test {
 		camera(glm::vec3(0.0f, 0.0f, 3.0f))
 	{
 		float cube[] = {
-			//Î»ÖÃ					//ÎÆÀí		//·¨ÏòÁ¿
+			//Î»ï¿½ï¿½					//ï¿½ï¿½ï¿½ï¿½		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
 			 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
 			 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.0f, 0.0f, -1.0f,
@@ -114,9 +114,6 @@ namespace test {
 
 			20, 21, 22, 22, 23, 20
 		};
-
-		GLCALL(glEnable(GL_BLEND));
-		GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 #if TYPE
 		this->m_VB = std::make_unique<VertexBuffer>(vertices, 6 * 6 * 8 * sizeof(float));
 #else
@@ -125,10 +122,10 @@ namespace test {
 #endif
 		this->m_VAO = std::make_unique<VertexArray>();
 		this->m_LightVAO = std::make_unique<VertexArray>();
-		//»ñÈ¡×ÅÉ«Æ÷
+		//ï¿½ï¿½È¡ï¿½ï¿½É«ï¿½ï¿½
 		this->shader = std::make_unique<Shader>("res/shaders/Material.shader");
 		this->lightShader = std::make_unique<Shader>("res/shaders/Light.shader");
-		//¶¥µãÊý×é
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		VertexBufferLayout layout;
 		layout.Push<float>(3);
 		layout.Push<float>(2);
@@ -169,6 +166,10 @@ namespace test {
 
 	void TestLighting::OnRender()
 	{
+		GLCALL(glEnable(GL_BLEND));
+		GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+		glEnable(GL_DEPTH_TEST);
+
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
@@ -184,7 +185,7 @@ namespace test {
 		this->shader->SetUniform3f("lightColor", this->lightColor);
 		//material properties
 		this->shader->SetUniform1f("material.shininess", 64.0f);
-		//ÎÆÀíÁ÷¶¯
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		this->shader->SetUniform1f("time", static_cast<float>(glfwGetTime()));
 		//std::cout << glfwGetTime() << std::endl;
 
@@ -200,11 +201,11 @@ namespace test {
 		glm::mat4 model = glm::rotate(glm::mat4(1.0f), (float)glfwGetTime() * glm::radians(45.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 		this->shader->SetUniformMat4f("model", model);
 
-		//Âþ·´ÉäÌùÍ¼
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼
 		this->texture->Bind(0);
-		//¾µÃæ·´ÉäÌùÍ¼
+		//ï¿½ï¿½ï¿½æ·´ï¿½ï¿½ï¿½ï¿½Í¼
 		this->texture2->Bind(1);
-		//·ÅÉä¹âÌùÍ¼
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼
 		this->texture3->Bind(2);
 
 		this->m_VAO->Bind();
@@ -213,7 +214,7 @@ namespace test {
 #else
 		render.Draw(*this->m_VAO, *this->m_IB, *this->shader);
 #endif
-		//µÆ
+		//ï¿½ï¿½
 		this->lightShader->Bind();
 		model = glm::translate(glm::mat4(1.0f), lightPos);
 		model = glm::scale(model, glm::vec3(0.2f));

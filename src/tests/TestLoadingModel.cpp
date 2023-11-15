@@ -1,12 +1,15 @@
 #include "tests/TestLoadingModel.h"
 #include <glfw/glfw3.h>
 #include "VertexBufferLayout.h"
-
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
 namespace test
 {
 	TestLoadingModel::TestLoadingModel():
-		modelEx("res/model/raiden/raiden.obj"),
-		camera(glm::vec3(0.0f, 0.0f, 3.0f))
+		modelEx("res/model/Nahida/scene.gltf"),
+		camera(glm::vec3(0.0f, 0.0f, 3.0f)),
+		scale(1.0f)	
 	{
 		this->shader = std::make_unique<Shader>("res/shaders/Basic.shader");
 
@@ -44,9 +47,11 @@ namespace test
 	{
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+		GLCALL(glEnable(GL_BLEND));
+		GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+		glEnable(GL_DEPTH_TEST);
 		// glEnable(GL_DEPTH_TEST);
-		// glDepthMask(GL_FALSE);
 
 		Render render;
 		glm::mat4 projection = glm::perspective(glm::radians(this->camera.Zoom), (float)800 / (float)600, 0.1f, 100.0f);
@@ -66,19 +71,18 @@ namespace test
 		this->shader->SetUniformMat4f("view", view);
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+		model = glm::scale(model, glm::vec3(this->scale, this->scale, this->scale));
 		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		this->shader->SetUniformMat4f("model", model);
 
 		render.Draw(*this->m_VAO, *this->planeShader, 0, 36);
 		GLCALL(modelEx.Draw(*this->shader));
 
-
 	}
 
 	void TestLoadingModel::OnImGuiRender()
 	{
-
+		ImGui::SliderFloat("SCALE", &this->scale, 0.1f, 10.0f);
 	}
 
 	void TestLoadingModel::SetCamera(Camera& camera)
@@ -86,4 +90,14 @@ namespace test
 		this->camera = camera;
 	}
 
+	TestLoadingModel::~TestLoadingModel()
+	{
+		this->shader->UnBind();
+		this->planeTex->UnBind();
+		this->m_VAO->UnBind();
+		this->m_VB->UnBind();
+		this->m_IB->UnBind();
+		this->planeShader->UnBind();
+		this->planeTex->UnBind();
+	}
 }

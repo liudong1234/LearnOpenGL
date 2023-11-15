@@ -70,10 +70,6 @@ namespace test
 			20, 21, 22, 22, 23, 20
 		};
 
-		GLCALL(glEnable(GL_BLEND));
-		GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-		glEnable(GL_DEPTH_TEST);
-
 		this->m_VAO = std::make_unique<VertexArray>();
 		this->lightVAO = std::make_unique<VertexArray>();
 		this->m_IB = std::make_unique<IndexBuffer>(indices, 6 * 6);
@@ -110,14 +106,12 @@ namespace test
 
 	void TestTexture2D::OnRender()
 	{
+		GLCALL(glEnable(GL_BLEND));
+		GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+		glEnable(GL_DEPTH_TEST);
+
 		glClearColor(this->backgroundColor.x, this->backgroundColor.y, this->backgroundColor.z, this->backgroundColor.w);
-		
-		glEnable(GL_STENCIL_TEST);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-		
-		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT ));
-
+		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ));
 		Render render;
 		glm::vec3 cubePositions[] = {
 			glm::vec3(2.0f,  0.0f,  -18.0f),
@@ -131,10 +125,6 @@ namespace test
 			glm::vec3(1.5f,  0.2f, -1.5f),
 			glm::vec3(-1.3f,  1.0f, -1.5f)
 		};
-
-		
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilMask(0xFF);
 		
 		this->shader->Bind();
 		this->shader->SetUniform1i("material.diffuse", this->materialDiffuse);

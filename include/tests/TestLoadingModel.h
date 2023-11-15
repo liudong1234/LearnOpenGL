@@ -14,6 +14,8 @@ namespace test
 		void OnImGuiRender() override;
 		void SetCamera(Camera& camera) override;
 
+		~TestLoadingModel();
+
 
 	private:
 		Model modelEx;
@@ -25,6 +27,8 @@ namespace test
 		std::unique_ptr<Shader> planeShader;
 		std::unique_ptr<Texture> planeTex;
 		Camera camera;
+
+		float scale;
 	};
 
 }
