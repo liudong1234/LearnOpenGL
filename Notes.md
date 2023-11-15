@@ -1,5 +1,6 @@
 ﻿---
 typora-root-url: ./img
+typora-copy-images-to: ./img
 ---
 
 
@@ -1376,7 +1377,63 @@ glStencilMask(0xFF);
 glEnable(GL_DEPTH_TEST);  
 ```
 
+# 十一、混合
 
+OpenGL中，混合(Blending)通常是实现物体透明度(Transparency)的一种技术。
+
+## 1.丢弃片段
+
+要想加载有alpha值的纹理，我们并不需要改很多东西，`stb_image`在纹理有alpha通道的时候会自动加载，但我们仍要在纹理生成过程中告诉OpenGL，我们的纹理现在使用alpha通道了：
+
+```c++
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+```
+
+同样，保证你在片段着色器中获取了纹理的全部4个颜色分量，而不仅仅是RGB分量：
+
+```glsl
+void main() 
+{    
+// FragColor = vec4(vec3(texture(texture1, TexCoords)), 1.0);    
+FragColor = texture(texture1, TexCoords); 
+}
+```
+
+## 2.混合
+
+要想渲染有多个透明度级别的图像，我们需要启用混合(Blending)。和OpenGL大多数的功能一样，我们可以启用GL_BLEND来启用混合
+
+```C++
+glEnable(GL_BLEND);
+```
+
+启用了混合之后，我们需要告诉OpenGL它该**如何**混合。
+
+OpenGL中的混合是通过下面这个方程来实现的：
+$$
+C¯result=C¯source∗Fsource+C¯destination∗Fdestination
+$$
+
+```c++
+glBlendFunc(GLenum sfactor, GLenum dfactor);//函数接受两个参数，来设置源和目标因子
+```
+
+| 选项                          | 值                                 |
+| :---------------------------- | :--------------------------------- |
+| `GL_ZERO`                     | 因子等于00                         |
+| `GL_ONE`                      | 因子等于11                         |
+| `GL_SRC_COLOR`                | 因子等于源颜色向量C¯source         |
+| `GL_ONE_MINUS_SRC_COLOR`      | 因子等于1−C¯source1                |
+| `GL_DST_COLOR`                | 因子等于目标颜色向量C¯destination  |
+| `GL_ONE_MINUS_DST_COLOR`      | 因子等于1−C¯destination1           |
+| `GL_SRC_ALPHA`                | 因子等于C¯source的alpha分量        |
+| `GL_ONE_MINUS_SRC_ALPHA`      | 因子等于1−C¯source的alpha分量      |
+| `GL_DST_ALPHA`                | 因子等于C¯destination的alpha分量   |
+| `GL_ONE_MINUS_DST_ALPHA`      | 因子等于1−C¯destination的alpha分量 |
+| `GL_CONSTANT_COLOR`           | 因子等于常数颜色向量C¯constant     |
+| `GL_ONE_MINUS_CONSTANT_COLOR` | 因子等于1−C¯constant1              |
+| `GL_CONSTANT_ALPHA`           | 因子等于C¯constant的alpha分量      |
+| `GL_ONE_MINUS_CONSTANT_ALPHA` | 因子等于1− C¯constant的alpha分量   |
 
 # 几、词汇表
 

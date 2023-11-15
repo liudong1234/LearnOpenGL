@@ -18,6 +18,7 @@
 #include "tests/TestLighting.h"
 #include "tests/TestLoadingModel.h"
 #include "tests/TestStencil.h"
+#include "tests/TestBlend.h"
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -125,6 +126,7 @@ int main(void)
 	testMenu->RegisterTest<test::TestLighting>("test lighting");
 	testMenu->RegisterTest<test::TestLoadingModel>("test Model");
 	testMenu->RegisterTest<test::TestStencil>("test stencil");
+	testMenu->RegisterTest<test::TestBlend>("test blend");
 
 	while (!glfwWindowShouldClose(window))
 	{
