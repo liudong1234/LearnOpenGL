@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include "Render.h"
 
+#include <vector>
+#include <string>
 class Texture
 {
 private:
@@ -13,11 +15,15 @@ private:
 public:
 	Texture();
 	Texture(const std::string& path, GLenum wrapS= GL_CLAMP_TO_EDGE, GLenum wrapT= GL_CLAMP_TO_EDGE);
+	Texture(std::vector<std::string>& faces, GLenum wrapS = GL_CLAMP_TO_EDGE, GLenum wrapT = GL_CLAMP_TO_EDGE);
 	~Texture();
 	void Bind(unsigned int slot = 0) const;
+	void CubeBind(unsigned int slot = 0) const;
 	void UnBind() const;
+	void UnCubeBind() const;
 	void SetType(std::string type);
 	void SetId(unsigned int id);
+
 
 	inline int GetWidth() const { return this->m_Width; }
 	inline int GetHeight() const { return this->m_Height; }

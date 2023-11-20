@@ -4,9 +4,7 @@
 #include "IndexBuffer.h"
 #include "Shader.h"
 #include "Texture.h"
-
 #include <memory>
-
 namespace test
 {
     class TestLighting :

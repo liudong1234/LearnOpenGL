@@ -1,41 +1,94 @@
 #include "tests/TestLoadingModel.h"
-#include <glfw/glfw3.h>
 #include "VertexBufferLayout.h"
+#include "tests/Log.h"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
+
+#include <glfw/glfw3.h>
+#include <iostream>
 namespace test
 {
 	TestLoadingModel::TestLoadingModel():
 		modelEx("res/model/Nahida/scene.gltf"),
 		camera(glm::vec3(0.0f, 0.0f, 3.0f)),
-		scale(1.0f)	
+		lightPos(1.2f, 1.0f, 2.0f)
 	{
-		this->shader = std::make_unique<Shader>("res/shaders/Basic.shader");
-
-		float planeVertices[] = {
-			// positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-			 5.0f, 0.0f,  5.0f,  2.0f, 0.0f,
-			-5.0f, 0.0f,  5.0f,  0.0f, 0.0f,
-			-5.0f, 0.0f, -5.0f,  0.0f, 2.0f,
-			 5.0f, 0.0f,  5.0f,  2.0f, 0.0f,
-			-5.0f, 0.0f, -5.0f,  0.0f, 2.0f,
-			 5.0f, 0.0f, -5.0f,  2.0f, 2.0f
-		};
-		this->planeShader = std::make_unique<Shader>("res/shaders/depth_testing.shader");
-		this->m_VAO = std::make_unique<VertexArray>();
 		
-		this->m_VB = std::make_unique<VertexBuffer>(planeVertices, sizeof(planeVertices));
+		//��պ�������ַ
+		std::vector<std::string> faces
+		{
+			"res/Textures/skybox/right.png",
+			"res/Textures/skybox/left.png",
+			"res/Textures/skybox/top.png",
+			"res/Textures/skybox/bottom.png",
+			"res/Textures/skybox/front.png",
+			"res/Textures/skybox/back.png"
+		};
 
-		VertexBufferLayout layout;
-		layout.Push<float>(3);
-		layout.Push<float>(2);
+		float skyboxVertices[] =
+		{
+			// positions          
+			-1.0f,  1.0f, -1.0f,
+			-1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+			 1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
 
-		this->m_VAO->AddBuffer(*this->m_VB, layout);
+			-1.0f, -1.0f,  1.0f,
+			-1.0f, -1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f, -1.0f,
+			-1.0f,  1.0f,  1.0f,
+			-1.0f, -1.0f,  1.0f,
 
-		this->planeTex = std::make_unique<Texture>("res/textures/wall.jpg");
+			 1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
 
+			-1.0f, -1.0f,  1.0f,
+			-1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f, -1.0f,  1.0f,
+			-1.0f, -1.0f,  1.0f,
 
+			-1.0f,  1.0f, -1.0f,
+			 1.0f,  1.0f, -1.0f,
+			 1.0f,  1.0f,  1.0f,
+			 1.0f,  1.0f,  1.0f,
+			-1.0f,  1.0f,  1.0f,
+			-1.0f,  1.0f, -1.0f,
+
+			-1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f,  1.0f,
+			 1.0f, -1.0f, -1.0f,
+			 1.0f, -1.0f, -1.0f,
+			-1.0f, -1.0f,  1.0f,
+		};
+
+		//��պ�
+		this->skysboxShader = std::make_unique<Shader>("res/shaders/TestLoadingModel/Skybox.shader");
+		this->skysboxTexture = std::make_unique<Texture>(faces);
+		this->skysboxVao = std::make_unique<VertexArray>();
+		this->skysboxVb = std::make_unique<VertexBuffer>(skyboxVertices, sizeof(skyboxVertices));
+		VertexBufferLayout skysboxLayout;
+		skysboxLayout.Push<float>(3);
+		this->skysboxVao->AddBuffer(*this->skysboxVb, skysboxLayout);
+
+		//other
+		this->shader = std::make_unique<Shader>("res/shaders/TestLoadingModel/Basic.shader");
+		this->m_VAO = std::make_unique<VertexArray>();
+
+		this->skysboxShader->Bind();
+		this->skysboxShader->SetUniform1i("skybox", 0);
+
+		this->shader->Bind();
+		this->shader->SetUniform1i("skybox", 0);
 	}
 
 	void TestLoadingModel::OnUpdate(float deltatime)
@@ -45,44 +98,54 @@ namespace test
 
 	void TestLoadingModel::OnRender()
 	{
+		GLCALL(glEnable(GL_DEPTH_TEST));
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
-		GLCALL(glEnable(GL_BLEND));
-		GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-		glEnable(GL_DEPTH_TEST);
-		// glEnable(GL_DEPTH_TEST);
+		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-		Render render;
 		glm::mat4 projection = glm::perspective(glm::radians(this->camera.Zoom), (float)800 / (float)600, 0.1f, 100.0f);
 		glm::mat4 view = this->camera.GetViewMatrix();
-		glm::mat4 model0 = glm::mat4(1.0f);
-		// model0 = glm::scale(model0, glm::vec3(10.5f, 10.5f, 10.5f));
-		model0 = glm::translate(model0, glm::vec3(0.0f, -1.0f, 0.0f));
-		this->planeShader->Bind();
-		this->planeShader->SetUniformMat4f("projection", projection);
-		this->planeShader->SetUniformMat4f("view", view);
-		this->planeShader->SetUniformMat4f("model", model0);
-		this->planeTex->Bind();
-		this->m_VAO->Bind();
+		glm::mat4 model = glm::mat4(1.0f);
 
+		Render render;
 		this->shader->Bind();
+		this->m_VAO->Bind();
 		this->shader->SetUniformMat4f("projection", projection);
 		this->shader->SetUniformMat4f("view", view);
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(this->scale, this->scale, this->scale));
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, -0.5f, 0.0f));
+		//model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
 		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		this->shader->SetUniformMat4f("model", model);
 
-		render.Draw(*this->m_VAO, *this->planeShader, 0, 36);
+		this->shader->SetUniform3f("cameraPos", this->camera.Position);
+		this->shader->SetUniform3f("light.position", this->lightPos);
+		//light properties
+		this->shader->SetUniform3f("light.ambient", 0.2f, 0.2f, 0.2f);
+		this->shader->SetUniform3f("light.diffuse", 0.76f, 0.57f, 0.5f);
+		this->shader->SetUniform3f("light.specular", 0.25f, 0.2f, 0.15f);
+		this->shader->SetUniform1f("material.shininess", 32.0f);
+
 		GLCALL(modelEx.Draw(*this->shader));
+		this->m_VAO->UnBind();
+
+
+		glDepthFunc(GL_LEQUAL);
+		this->skysboxShader->Bind();
+		view = glm::mat4(glm::mat3(this->camera.GetViewMatrix()));
+		this->skysboxShader->SetUniformMat4f("view", view);
+		this->skysboxShader->SetUniformMat4f("projection", projection);
+		this->skysboxTexture->CubeBind();
+
+		render.Draw(*this->skysboxVao, *this->skysboxShader, 0, 36);
+		this->skysboxVao->UnBind();
+		glDepthFunc(GL_LESS);
 
 	}
 
 	void TestLoadingModel::OnImGuiRender()
 	{
-		ImGui::SliderFloat("SCALE", &this->scale, 0.1f, 10.0f);
+		ImGui::DragFloat3(u8"�ƹ�λ��", &this->lightPos.x, -100.0f, 100.0f);
 	}
 
 	void TestLoadingModel::SetCamera(Camera& camera)
@@ -93,11 +156,15 @@ namespace test
 	TestLoadingModel::~TestLoadingModel()
 	{
 		this->shader->UnBind();
-		this->planeTex->UnBind();
 		this->m_VAO->UnBind();
 		this->m_VB->UnBind();
 		this->m_IB->UnBind();
-		this->planeShader->UnBind();
-		this->planeTex->UnBind();
+
+		this->skysboxShader->UnBind();
+		this->skysboxTexture->UnBind();
+		this->skysboxVao->UnBind();
+
+		LOG(this->GetTestName() + "����")
 	}
+
 }

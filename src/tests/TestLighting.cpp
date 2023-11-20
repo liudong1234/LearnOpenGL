@@ -5,7 +5,6 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include <iostream>
-#include <memory>
 ///�ĵ�
 ///�������б�Warning: uniform viewPos doesn't exist 
 /// Warning: uniform material.shininess doesn't exist
@@ -114,6 +113,8 @@ namespace test {
 
 			20, 21, 22, 22, 23, 20
 		};
+
+
 #if TYPE
 		this->m_VB = std::make_unique<VertexBuffer>(vertices, 6 * 6 * 8 * sizeof(float));
 #else
@@ -123,8 +124,8 @@ namespace test {
 		this->m_VAO = std::make_unique<VertexArray>();
 		this->m_LightVAO = std::make_unique<VertexArray>();
 		//��ȡ��ɫ��
-		this->shader = std::make_unique<Shader>("res/shaders/Material.shader");
-		this->lightShader = std::make_unique<Shader>("res/shaders/Light.shader");
+		this->shader = std::make_unique<Shader>("res/shaders/TestLighting/Material.shader");
+		this->lightShader = std::make_unique<Shader>("res/shaders/TestLighting/Light.shader");
 		//��������
 		VertexBufferLayout layout;
 		layout.Push<float>(3);
@@ -143,6 +144,10 @@ namespace test {
 		this->shader->SetUniform1i("material.diffuse", 0);
 		this->shader->SetUniform1i("material.specular", 1);
 		this->shader->SetUniform1i("material.emission", 2);
+
+
+		this->m_LightVAO->UnBind();
+		this->m_VAO->UnBind();
 	}
 
 	TestLighting::~TestLighting()
@@ -168,10 +173,10 @@ namespace test {
 	{
 		GLCALL(glEnable(GL_BLEND));
 		GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-		glEnable(GL_DEPTH_TEST);
+		GLCALL(glEnable(GL_DEPTH_TEST));
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
 		Render render;
 		this->shader->Bind();
@@ -231,14 +236,12 @@ namespace test {
 
 	void TestLighting::OnImGuiRender()
 	{
-		ImGui::Begin("OpenGL Texture Test");
 		//ImGui::SliderFloat3("cameraPos", &this->cameraPos.x, -50.0f, 100.0f);
 		//ImGui::SliderFloat3("cameraFront", &this->cameraFront.x, -50.0f, 50.0f);
 		//ImGui::SliderFloat3("cameraUp", &this->cameraUp.x, -100.0f, 100.0f);
 		ImGui::SliderFloat3("cameraPos", &this->camera.Position.x, -100.0f, 100.f);
 		ImGui::SliderFloat3("lightPos", &this->lightPos.x, -100.0f, 100.0f);
 		ImGui::ColorEdit3("lightColor", &this->lightColor.x);
-		ImGui::End();
 	}
 	Camera TestLighting::GetCamera()
 	{

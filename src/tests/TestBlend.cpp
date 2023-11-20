@@ -84,6 +84,7 @@ namespace test
 		layout.Push<float>(2);
 		layout.Push<float>(3);
 		this->cubeVao->AddBuffer(*this->cubeVb, layout);
+		this->cubeVao->UnBind();
 
 		this->windowShader = std::make_unique<Shader>("res/shaders/TestBlend/blend.shader");
 		this->windowVao = std::make_unique<VertexArray>();
@@ -95,10 +96,12 @@ namespace test
 		winLayout.Push<float>(2);
 		winLayout.Push<float>(3);
 		this->windowVao->AddBuffer(*this->windowVb, winLayout);
+		this->windowVao->UnBind();
 		
 		
 		this->cubeShader->Bind();
 		this->cubeShader->SetUniform1i("tex", 0);
+
 
 		//this->windowShader->Bind();
 		//this->windowShader->SetUniform1i("tex", 0);
@@ -116,7 +119,8 @@ namespace test
 		glEnable(GL_BLEND);
 		GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 		glEnable(GL_CULL_FACE);
-		glCullFace(GL_CCW);
+		glCullFace(GL_BACK);
+		glFrontFace(GL_CCW);
 		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
 		Render render;

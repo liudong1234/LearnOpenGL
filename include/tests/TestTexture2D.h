@@ -5,7 +5,7 @@
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 #include "VertexBufferLayout.h"
-#include "TeXture.h"
+#include "Texture.h"
 #include "Camera.h"
 #include <memory>
 

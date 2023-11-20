@@ -1,6 +1,9 @@
 #pragma once
 #include "Test.h"
 #include "Model.h"
+
+#include<memory>
+
 namespace test
 {
 
@@ -13,7 +16,6 @@ namespace test
 		void OnRender() override;
 		void OnImGuiRender() override;
 		void SetCamera(Camera& camera) override;
-
 		~TestLoadingModel();
 
 
@@ -24,11 +26,15 @@ namespace test
 
 		std::unique_ptr<IndexBuffer> m_IB;
 		std::unique_ptr<Shader> shader;
-		std::unique_ptr<Shader> planeShader;
-		std::unique_ptr<Texture> planeTex;
-		Camera camera;
 
-		float scale;
+		//��պ�
+		std::unique_ptr<Shader> skysboxShader;
+		std::unique_ptr<VertexArray> skysboxVao;
+		std::unique_ptr<VertexBuffer> skysboxVb;
+		std::unique_ptr<Texture> skysboxTexture;
+
+		glm::vec3 lightPos;
+		Camera camera;
 	};
 
 }

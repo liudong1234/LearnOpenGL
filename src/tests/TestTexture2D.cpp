@@ -4,9 +4,9 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "glm/gtc/matrix_transform.hpp"
-#include "StructSet.h"
+#include "tests/Log.h"
+
 #include <iostream>
-#include <memory>
 namespace test
 {
 	TestTexture2D::TestTexture2D() :
@@ -70,12 +70,13 @@ namespace test
 			20, 21, 22, 22, 23, 20
 		};
 
+		//获取着色器
+		this->shader = std::make_unique<Shader>("res/shaders/TestTexture2D/LightType.shader");
+		this->lightShader = std::make_unique<Shader>("res/shaders/TestTexture2D/light.shader");
+
 		this->m_VAO = std::make_unique<VertexArray>();
 		this->lightVAO = std::make_unique<VertexArray>();
 		this->m_IB = std::make_unique<IndexBuffer>(indices, 6 * 6);
-		//获取着色器
-		this->shader = std::make_unique<Shader>("res/shaders/LightType.shader");
-		this->lightShader = std::make_unique<Shader>("res/shaders/Light.shader");
 
 		//顶点数组
 		this->m_VB = std::make_unique<VertexBuffer>(cube,8 * 4 * 6 * sizeof(float));
@@ -91,27 +92,38 @@ namespace test
 		this->texture2 = std::make_unique<Texture>("res/textures/container2_specular.png");
 		this->texture3 = std::make_unique<Texture>("res/textures/head.png");
 		
+		this->m_VAO->UnBind();
+		this->lightVAO->UnBind();
 		
+	}
+
+	TestTexture2D::~TestTexture2D()
+	{
+		this->shader->UnBind();
+		this->lightShader->UnBind();
+		this->texture->UnBind();
+		this->texture2->UnBind();
+		this->texture3->UnBind();
+		this->m_VAO->UnBind();
+		this->m_VB->UnBind();
+		this->m_IB->UnBind();
+
+		LOG(this->GetTestName() + " 析构")
 	}
 
 	void TestTexture2D::OnUpdate(float deltatime)
 	{
-		this->shader->UnBind();
-		this->m_VAO->UnBind();
-		this->m_VB->UnBind();
-		this->texture->UnBind();
-		this->texture2->UnBind();
-		this->texture3->UnBind();
 	}
 
 	void TestTexture2D::OnRender()
 	{
 		GLCALL(glEnable(GL_BLEND));
 		GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-		glEnable(GL_DEPTH_TEST);
+		GLCALL(glEnable(GL_DEPTH_TEST));
 
 		glClearColor(this->backgroundColor.x, this->backgroundColor.y, this->backgroundColor.z, this->backgroundColor.w);
-		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ));
+		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+
 		Render render;
 		glm::vec3 cubePositions[] = {
 			glm::vec3(2.0f,  0.0f,  -18.0f),
@@ -125,14 +137,11 @@ namespace test
 			glm::vec3(1.5f,  0.2f, -1.5f),
 			glm::vec3(-1.3f,  1.0f, -1.5f)
 		};
-		
+
 		this->shader->Bind();
 		this->shader->SetUniform1i("material.diffuse", this->materialDiffuse);
 		this->shader->SetUniform1i("material.specular", this->materialSpecular);
 		this->shader->SetUniform1i("picture", 2);
-
-
-		this->shader->Bind();
 
 		this->shader->SetUniform3f("viewPos", this->camera.Position);
 		//light properties
@@ -249,18 +258,5 @@ namespace test
 	void TestTexture2D::SetCamera(Camera& camera)
 	{
 		this->camera = camera;
-	}
-	
-	TestTexture2D::~TestTexture2D()
-	{
-		this->texture->UnBind();
-		this->texture2->UnBind();
-		this->texture3->UnBind();
-		this->m_VAO->UnBind();
-		this->m_VB->UnBind();
-		this->m_IB->UnBind();
-
-		this->shader->UnBind();
-		this->lightShader->UnBind();
 	}
 }

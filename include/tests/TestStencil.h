@@ -48,7 +48,7 @@ namespace test
 
 		float angle;
 	private:
-		//å†…ç½®æ¸²æŸ“å‡½æ•°
+		//ÄÚÖÃäÖÈ¾º¯Êı
 		void RenderCube(Render& render);
 		void RenderCubeEdge(Render& render);
 		void RenderPlane(Render& render);

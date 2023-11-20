@@ -19,6 +19,8 @@
 #include "tests/TestLoadingModel.h"
 #include "tests/TestStencil.h"
 #include "tests/TestBlend.h"
+#include "tests/TestFrameBuffer.h"
+
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -82,11 +84,6 @@ int main(void)
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
-	// glEnable(GL_DEPTH_TEST);
-
-	/* 启用混合(默认不会启用) */
-	// glEnable(GL_BLEND);
-	// glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
 	std::cout << glGetString(GL_VERSION) << std::endl;
@@ -126,10 +123,15 @@ int main(void)
 	testMenu->RegisterTest<test::TestLighting>("test lighting");
 	testMenu->RegisterTest<test::TestLoadingModel>("test Model");
 	testMenu->RegisterTest<test::TestStencil>("test stencil");
-	testMenu->RegisterTest<test::TestBlend>("test blend");
+	//testMenu->RegisterTest<test::TestBlend>("test blend");
+	testMenu->RegisterTest<test::TestFrameBuffer>("test framebuffer");
 
 	while (!glfwWindowShouldClose(window))
 	{
+		float currentFrame = static_cast<float>(glfwGetTime());
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		render.Clear();
 		// Start the Dear ImGui frame
@@ -137,16 +139,12 @@ int main(void)
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		float currentFrame = static_cast<float>(glfwGetTime());
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
 		// input
 		// -----
 		processInput(window);
 		/* Render here */
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		//测试
 		if (currentTest)
@@ -233,12 +231,12 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 	lastX = xpos;
 	lastY = ypos;
 
-	//camera.ProcessMouseMovement(xoffset, yoffset);
+	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	camera.ProcessMouseScroll(yoffset);
+	camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }

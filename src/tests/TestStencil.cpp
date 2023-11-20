@@ -4,6 +4,7 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "glm/gtc/matrix_transform.hpp"
+#include "tests/Log.h"
 #include <iostream>
 #include <memory>
 
@@ -22,7 +23,7 @@ namespace test
 		GLCALL(glEnable(GL_DEPTH_TEST));
 		float cube[] =
 		{
-			//位置					//纹理		//法向量
+			//λ��					//����		//������
 			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
 			 0.5f, -0.5f, -0.5f,  1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
 			 0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.0f, 0.0f, -1.0f,
@@ -95,10 +96,10 @@ namespace test
 		//cube
 		this->m_VAO = std::make_unique<VertexArray>();
 		this->m_IB = std::make_unique<IndexBuffer>(indices, 6 * 6);
-		//获取着色器
-		this->shader = std::make_unique<Shader>("res/shaders/stencilCube.shader");
+		//��ȡ��ɫ��
+		this->shader = std::make_unique<Shader>("res/shaders/TestStencil/stencilCube.shader");
 		//this->edgeShader = std::make_unique<Shader>("res/shaders/")
-		//顶点数组
+		//��������
 		this->m_VB = std::make_unique<VertexBuffer>(cube, 8 * 4 * 6 * sizeof(float));
 		VertexBufferLayout layout;
 		layout.Push<float>(3);
@@ -106,9 +107,9 @@ namespace test
 		layout.Push<float>(3);
 		this->m_VAO->AddBuffer(*this->m_VB, layout);
 
-		//地板
+		//�ذ�
 		this->planeVAO = std::make_unique<VertexArray>();
-		this->planeShader = std::make_unique<Shader>("res/shaders/stencilPlane.shader");
+		this->planeShader = std::make_unique<Shader>("res/shaders/TestStencil/stencilPlane.shader");
 		this->m_planeVB = std::make_unique<VertexBuffer>(planeVertices, sizeof(planeVertices));
 		VertexBufferLayout layoutPlane;
 		layoutPlane.Push<float>(3);
@@ -117,14 +118,14 @@ namespace test
 
 		//grass
 		this->grassVAO = std::make_unique<VertexArray>();
-		this->grassShader = std::make_unique<Shader>("res/shaders/grass.shader");
+		this->grassShader = std::make_unique<Shader>("res/shaders/TestStencil/grass.shader");
 		this->m_grassVB = std::make_unique<VertexBuffer>(grassVertices, sizeof(grassVertices));
 		VertexBufferLayout layoutGrass;
 		layoutGrass.Push<float>(3);
 		layoutGrass.Push<float>(2);
 		this->grassVAO->AddBuffer(*this->m_grassVB, layoutGrass);
 
-		//纹理
+		//����
 		this->cubeTexture = std::make_unique<Texture>("res/textures/container2.png");
 		this->planeTexture = std::make_unique<Texture>("res/textures/wall.jpg");
 		this->grassTexture = std::make_unique<Texture>("res/textures/grass.png");
@@ -136,6 +137,11 @@ namespace test
 		this->planeShader->SetUniform1i("tex", 0);
 		this->grassShader->Bind();
 		this->grassShader->SetUniform1i("tex", 0);
+
+
+		this->grassVAO->UnBind();
+		this->m_VAO->UnBind();
+		this->planeVAO->UnBind();
 	}
 
 	void TestStencil::OnUpdate(float deltatime)
@@ -147,7 +153,7 @@ namespace test
 	{
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
-		glDepthMask(GL_FALSE);  // 关闭深度写入
+		glDepthMask(GL_FALSE);  // �ر����д��
 
 		glm::mat4 model = glm::mat4(1.0f);
 
@@ -160,14 +166,14 @@ namespace test
 		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
 		this->shader->SetUniformMat4f("model", model);
 		render.Draw(*this->m_VAO, *this->m_IB, *this->shader);
-		glDepthMask(GL_TRUE);  // 深度写入
+		glDepthMask(GL_TRUE);  // ���д��
 	}
 
 	void TestStencil::RenderCubeEdge(Render& render)
 	{
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);//在它们片段的模板值不等于1时才绘制。
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);//������Ƭ�ε�ģ��ֵ������1ʱ�Ż��ơ�
 		glStencilMask(0x00);
-		glDepthMask(GL_FALSE);  // 关闭深度写入
+		glDepthMask(GL_FALSE);  // �ر����д��
 		this->shader->Bind();
 		this->edgeTexture->Bind();
 		float scale = 1.1f;
@@ -177,9 +183,9 @@ namespace test
 
 		this->shader->SetUniformMat4f("model", model);
 		render.Draw(*this->m_VAO, *this->m_IB, *this->shader);
-		glDepthMask(GL_TRUE);  // 深度写入
+		glDepthMask(GL_TRUE);  // ���д��
 	}
-	//地板
+	//�ذ�
 	void TestStencil::RenderPlane(Render& render)
 	{
 		glm::mat4 model = glm::mat4(1.0f);
@@ -236,14 +242,14 @@ namespace test
 		GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
 		Render render;
-		//先渲染地板
+		//����Ⱦ�ذ�
 		this->RenderPlane(render);
-		// 第一组立方体
+		// ��һ��������
 		this->RenderCube(render);
-		//渲染草
+		//��Ⱦ��
 		this->RenderGrass(render);
 
-		//第二组立方体轮廓
+		//�ڶ�������������
 		this->RenderCubeEdge(render);
 		glStencilMask(0xFF);
 		//glEnable(GL_DEPTH_TEST);
@@ -286,6 +292,7 @@ namespace test
 		this->m_VAO->UnBind();
 		this->planeVAO->UnBind();
 		this->grassVAO->UnBind();
+		this->edgeShader->UnBind();
 
 		this->m_VB->UnBind();
 		this->m_planeVB->UnBind();
@@ -295,6 +302,8 @@ namespace test
 		this->planeTexture->UnBind();
 		this->grassTexture->UnBind();
 		this->edgeTexture->UnBind();
+
+		LOG(this->GetTestName() + "����")
 
 	}
 }
