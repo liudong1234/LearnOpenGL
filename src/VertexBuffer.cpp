@@ -6,11 +6,11 @@ VertexBuffer::VertexBuffer():
 {
 }
 
-VertexBuffer::VertexBuffer(const void* data, const int size)
+VertexBuffer::VertexBuffer(const void* data, const int size, GLenum type)
 {
 	glGenBuffers(1, &this->m_RenderID);
-	glBindBuffer(GL_ARRAY_BUFFER, this->m_RenderID);//绑定
-	glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+	glBindBuffer(type, this->m_RenderID);//绑定
+	glBufferData(type, size, data, GL_STATIC_DRAW);
 }
 
 VertexBuffer::~VertexBuffer()
@@ -18,14 +18,17 @@ VertexBuffer::~VertexBuffer()
 	GLCALL(glDeleteBuffers(1, &this->m_RenderID));
 }
 
-void VertexBuffer::Bind() const
+void VertexBuffer::Bind(GLenum type) const
 {
-	GLCALL(glBindBuffer(GL_ARRAY_BUFFER, this->m_RenderID));//绑定
-
+	GLCALL(glBindBuffer(type, this->m_RenderID));//绑定
 }
 
-void VertexBuffer::UnBind() const
+void VertexBuffer::UnBind(GLenum type) const
 {
-	GLCALL(glBindBuffer(GL_ARRAY_BUFFER, 0));//绑定
+	GLCALL(glBindBuffer(type, 0));//绑定
+}
 
+void VertexBuffer::BindData(GLenum type, const int size) const
+{
+	GLCALL(glBindBufferRange(type, 0, this->m_RenderID, 0, size));
 }

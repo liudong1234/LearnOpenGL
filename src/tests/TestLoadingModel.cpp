@@ -69,6 +69,7 @@ namespace test
 			 1.0f, -1.0f, -1.0f,
 			 1.0f, -1.0f, -1.0f,
 			-1.0f, -1.0f,  1.0f,
+			 1.0f,  -1.0f,  1.0f
 		};
 
 		//��պ�
@@ -121,9 +122,9 @@ namespace test
 		this->shader->SetUniform3f("cameraPos", this->camera.Position);
 		this->shader->SetUniform3f("light.position", this->lightPos);
 		//light properties
-		this->shader->SetUniform3f("light.ambient", 0.2f, 0.2f, 0.2f);
-		this->shader->SetUniform3f("light.diffuse", 0.76f, 0.57f, 0.5f);
-		this->shader->SetUniform3f("light.specular", 0.25f, 0.2f, 0.15f);
+		this->shader->SetUniform3f("light.ambient", 0.6f, 0.6f, 0.6f);
+		this->shader->SetUniform3f("light.diffuse", 0.8f, 0.7f, 0.6f);
+		this->shader->SetUniform3f("light.specular", 0.1f, 0.1f, 0.1f);
 		this->shader->SetUniform1f("material.shininess", 32.0f);
 
 		GLCALL(modelEx.Draw(*this->shader));
@@ -145,7 +146,7 @@ namespace test
 
 	void TestLoadingModel::OnImGuiRender()
 	{
-		ImGui::DragFloat3(u8"�ƹ�λ��", &this->lightPos.x, -100.0f, 100.0f);
+		ImGui::DragFloat3(u8"灯光", &this->lightPos.x, 1.0f, -100.0f, 100.0f);
 	}
 
 	void TestLoadingModel::SetCamera(Camera& camera)
@@ -164,7 +165,7 @@ namespace test
 		this->skysboxTexture->UnBind();
 		this->skysboxVao->UnBind();
 
-		LOG(this->GetTestName() + "����")
+		LOG(this->GetTestName() + "析构")
 	}
 
 }

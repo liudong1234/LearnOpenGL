@@ -20,6 +20,9 @@
 #include "tests/TestStencil.h"
 #include "tests/TestBlend.h"
 #include "tests/TestFrameBuffer.h"
+#include "tests/TestAdvancedLore.h"
+#include "tests/TestIntance.h"
+#include "tests/Planet.h"
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -123,8 +126,11 @@ int main(void)
 	testMenu->RegisterTest<test::TestLighting>("test lighting");
 	testMenu->RegisterTest<test::TestLoadingModel>("test Model");
 	testMenu->RegisterTest<test::TestStencil>("test stencil");
-	//testMenu->RegisterTest<test::TestBlend>("test blend");
+	testMenu->RegisterTest<test::TestBlend>("test blend");
 	testMenu->RegisterTest<test::TestFrameBuffer>("test framebuffer");
+	testMenu->RegisterTest<test::TestAdvancedLore>("Test AdvancedLore");
+	testMenu->RegisterTest<test::TestIntance>("TestIntance");
+	testMenu->RegisterTest<test::Planet>("Planet");
 
 	while (!glfwWindowShouldClose(window))
 	{

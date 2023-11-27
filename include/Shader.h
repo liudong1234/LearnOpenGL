@@ -21,6 +21,7 @@ public:
 	Shader();
 	Shader(const char* filepath);
 	~Shader();
+	inline unsigned int GetId() const {return this->m_RenderID;}
 
 	void Bind() const;
 	void UnBind() const;

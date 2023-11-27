@@ -12,14 +12,15 @@ public:
 	Model(const char* path);
 	~Model();
 	void Draw(Shader& shader);
-
-private:
 	//模型数据
 	std::vector<Mesh> meshes;
-	std::string directory;
-
 	//保存全局纹理保证它的生命周期
 	std::vector<TextureStruct> texturesLoaded;
+
+
+private:
+	std::string directory;
+
 	
 	//最终纹理
 	std::vector<TextureStruct> textureResult;

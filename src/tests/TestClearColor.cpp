@@ -1,4 +1,4 @@
-﻿#include "TestClearColor.h"
+﻿#include "tests/TestClearColor.h"
 #include "Render.h"
 #include "imgui/imgui.h"
 namespace test

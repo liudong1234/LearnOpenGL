@@ -77,5 +77,5 @@ void main()
 
 
     FragColor = vec4(result, 1.0);
-        //vec4(texture(material.texture_diffuse1, TexCoords).rgb, 1.0f) + result + vec4(texture(skybox, R).rgb, 1.0);
+    //FragColor = vec4(texture(material.texture_diffuse1, TexCoords).rgb, 1.0f) + result + vec4(texture(skybox, R).rgb, 1.0);
 }

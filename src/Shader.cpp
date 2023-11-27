@@ -17,7 +17,6 @@ Shader::Shader(const char* filepath) :
 {
 	ShaderProgramSource source = this->ParseShader(filepath);
 	this->m_RenderID = this->CreateShader(source.VertexSource, source.FragmentSource);
-
 }
 
 Shader::~Shader()

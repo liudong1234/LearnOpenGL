@@ -19,6 +19,7 @@ public:
 	~Mesh();
 	void Draw(Shader& shader);
 	Mesh(Mesh&& other) noexcept;
+	std::unique_ptr<VertexArray>& GetVertexArray() {return this->m_VAO;}
 private:
 	std::unique_ptr<VertexArray> m_VAO;
 	std::unique_ptr<IndexBuffer> m_IB;
