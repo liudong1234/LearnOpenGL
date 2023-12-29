@@ -3322,6 +3322,620 @@ float attenuation = 1.0 / distance;
 
 总而言之，gamma校正使你可以在线性空间中进行操作。因为线性空间更符合物理世界，大多数物理公式现在都可以获得较好效果，比如真实的光的衰减。你的光照越真实，使用gamma校正获得漂亮的效果就越容易。这也正是为什么当引进gamma校正时，建议只去调整光照参数的原因。
 
+## (三)阴影
+
+### 1.阴影映射
+
+
+
+### 2.点阴影
+
+**本节我们的焦点是在各种方向生成动态阴影。这个技术可以适用于点光源，生成所有方向上的阴影。**
+
+我们从光的透视图生成一个深度贴图，基于当前fragment位置来对深度贴图采样，然后用储存的深度值和每个fragment进行对比，看看它是否在阴影中
+
+### 3.CSM
+
+## (四)法线贴图
+
+1.：是什么使表面被视为完全平坦的表面来照亮？
+
+答案会是表面的法
+
+光照算法的视角考虑的话，只有一件事决定物体的形状，这就是垂直于它的法线向量。砖块表面只有一个法线向量，表面完全根据这个法线向量被以一致的方式照亮。如果每个fragment都是用自己的不同的法线会怎样？这样我们就可以根据表面细微的细节对法线向量进行改变；这样就会获得一种表面看起来要复杂得多的幻觉：
+
+![img](/normal_mapping_surfaces.png)
+
+每个fragment使用了自己的法线，我们就可以让光照相信一个表面由很多微小的（垂直于法线向量的）平面所组成，物体表面的细节将会得到极大提升。这种每个fragment使用各自的法线，替代一个面上所有fragment使用同一个法线的技术叫做法线贴图（normal mapping）或凹凸贴图（bump mapping）。应用到砖墙上，效果像这样：
+
+![img](/normal_mapping_compare.png)
+
+### 1.法线贴图
+
+（1）需要为每个fragment提供一个法线。像diffuse贴图和specular贴图一样，我们可以使用一个2D纹理来储存法线数据。2D纹理不仅可以储存颜色和光照数据，还可以储存法线向量。
+
+（2）由于法线向量是个几何工具，而纹理通常只用于储存颜色信息，用纹理储存法线向量不是非常直接。如果你想一想，就会知道纹理中的颜色向量用r、g、b元素代表一个3D向量。类似的我们也可以将法线向量的x、y、z元素储存到纹理中，代替颜色的r、g、b元素。法线向量的范围在-1到1之间，所以我们先要将其映射到0到1的范围：
+
+```glsl
+vec3 rgb_normal = normal * 0.5 + 0.5; // 从 [-1,1] 转换至 [0,1]
+```
+
+将法线向量变换为像这样的RGB颜色元素，我们就能把根据表面的形状的fragment的法线保存在2D纹理中。教程开头展示的那个砖块的例子的法线贴图如下所示：
+
+![img](/normal_mapping_normal_map.png)
+
+这会是一种偏蓝色调的纹理（你在网上找到的几乎所有法线贴图都是这样的）。这是因为所有法线的指向都偏向z轴（0, 0, 1）这是一种偏蓝的颜色。法线向量从z轴方向也向其他方向轻微偏移，颜色也就发生了轻微变化，这样看起来便有了一种深度。例如，你可以看到在每个砖块的顶部，颜色倾向于偏绿，这是因为砖块的顶部的法线偏向于指向正y轴方向（0, 1, 0），这样它就是绿色的了。
+
+```glsl
+uniform sampler2D normalMap;   
+void main() 
+{               // 从法线贴图范围[0,1]获取法线    
+	normal = texture(normalMap, fs_in.TexCoords).rgb; // 将法线向量转换为范围[-1,1]
+    normal = normalize(normal * 2.0 - 1.0);        
+	[...]    // 像往常那样处理光照 
+}
+```
+
+(3)有个问题限制了刚才讲的那种法线贴图的使用。我们使用的那个法线贴图里面的所有法线向量都是指向正z方向的。上面的例子能用，是因为那个平面的表面法线也是指向正z方向的。可是，如果我们在表面法线指向正y方向的平面上使用同一个法线贴图会发生什么？
+
+
+![img](/normal_mapping_ground.png)
+
+光照看起来完全不对！发生这种情况是平面的表面法线现在指向了y，而采样得到的法线仍然指向的是z。结果就是光照仍然认为表面法线和之前朝向正z方向时一样；这样光照就不对了。下面的图片展示了这个表面上采样的法线的近似情况：
+
+
+![img](https://learnopengl-cn.github.io/img/05/04/normal_mapping_ground.png)
+
+光照看起来完全不对！发生这种情况是平面的表面法线现在指向了y，而采样得到的法线仍然指向的是z。结果就是光照仍然认为表面法线和之前朝向正z方向时一样；这样光照就不对了。下面的图片展示了这个表面上采样的法线的近似情况：
+
+![img](/normal_mapping_ground_normals.png)
+
+你可以看到所有法线都指向z方向，它们本该朝着表面法线指向y方向的。一个可行方案是为每个表面制作一个单独的法线贴图。如果是一个立方体的话我们就需要6个法线贴图，但是如果模型上有无数的朝向不同方向的表面，这就不可行了                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    （译注：实际上对于复杂模型可以把朝向各个方向的法线储存在同一张贴图上，你可能看到过不只是蓝色的法线贴图，不过用那样的法线贴图有个问题是你必须记住模型的起始朝向，如果模型运动了还要记录模型的变换，这是非常不方便的；此外就像作者所说的，如果把一个diffuse纹理应用在同一个物体的不同表面上，就像立方体那样的，就需要做6个法线贴图，这也不可取）。
+
+另一个稍微有点难的解决方案是，在一个不同的坐标空间中进行光照，这个坐标空间里，法线贴图向量总是指向这个坐标空间的正z方向；所有的光照向量都相对与这个正z方向进行变换。这样我们就能始终使用同样的法线贴图，不管朝向问题。这个坐标空间叫做切线空间（tangent space）。
+
+### 2.切线空间
+
+（1）法线贴图中的法线向量定义在切线空间中，在切线空间中，法线永远指着正z方向。切线空间是位于三角形表面之上的空间：法线相对于单个三角形的本地参考框架。它就像法线贴图向量的本地空间；它们都被定义为指向正z方向，无论最终变换到什么方向。使用一个特定的矩阵我们就能将本地/切线空间中的法线向量转成世界或视图空间下，使它们转向到最终的贴图表面的方向。
+
+（2）线贴图被定义在切线空间中，所以一种解决问题的方式是计算出一种矩阵，把法线从切线空间变换到一个不同的空间，这样它们就能和表面法线方向对齐了：法线向量都会指向正y方向。切线空间的一大好处是我们可以为任何类型的表面计算出一个这样的矩阵，由此我们可以把切线空间的z方向和表面的法线方向对齐。
+
+（3）这种矩阵叫做TBN矩阵这三个字母分别代表tangent、bitangent和normal向量。这是建构这个矩阵所需的向量。要建构这样一个把切线空间转变为不同空间的变异矩阵，我们需要三个相互垂直的向量，它们沿一个表面的法线贴图对齐于：上、右、前；这和我们在[摄像机教程](https://learnopengl-cn.github.io/01 Getting started/09 Camera/)中做的类似。
+
+已知上向量是表面的法线向量。右和前向量是切线(Tagent)和副切线(Bitangent)向量。下面的图片展示了一个表面的三个向量：
+
+![img](/normal_mapping_tbn_vectors.png)
+
+（4）具体推理过程：[TBN矩阵推导](https://learnopengl-cn.github.io/05%20Advanced%20Lighting/04%20Normal%20Mapping/)
+
+![image-20231228132446173](/image-20231228132446173.png)
+
+**用公式、三角形的两条边以及纹理坐标计算出切线向量T和副切线B**
+
+### 3.切线空间法线贴图
+
+（1）为让法线贴图工作，我们先得在着色器中创建一个TBN矩阵。我们先将前面计算出来的切线和副切线向量传给顶点着色器，作为它的属性：
+
+```glsl
+#version 330 core
+layout (location = 0) in vec3 position;
+layout (location = 1) in vec3 normal;
+layout (location = 2) in vec2 texCoords;
+layout (location = 3) in vec3 tangent;
+layout (location = 4) in vec3 bitangent;
+```
+
+（2）在顶点着色器的main函数中我们创建TBN矩阵：
+
+我们先将所有TBN向量变换到我们所操作的坐标系中，现在是世界空间，我们可以乘以model矩阵。然后我们创建实际的TBN矩阵，直接把相应的向量应用到mat3构造器就行。注意，如果我们希望更精确的话就不要将TBN向量乘以model矩阵，而是使用法线矩阵，因为我们只关心向量的方向，不关心平移和缩放。
+
+```glsl
+void main()
+{
+   [...]
+   vec3 T = normalize(vec3(model * vec4(tangent,   0.0)));
+   vec3 B = normalize(vec3(model * vec4(bitangent, 0.0)));
+   vec3 N = normalize(vec3(model * vec4(normal,    0.0)));
+   mat3 TBN = mat3(T, B, N)
+}
+```
+
+**从技术上讲，顶点着色器中 不需要bitangent变量。所有三个 TBN 向量都相互垂直，因此我们可以在顶点着色器中通过T和N向量的叉积来计算双切线：`vec3 B = cross(N, T);`**
+
+（3）现在我们有了 TBN 矩阵，我们该如何使用它呢？我们可以通过两种方法使用 TBN 矩阵进行法线贴图，我们将演示这两种方法：
+
+1. 我们将任意向量从切线空间变换到世界空间的 TBN 矩阵，将其交给片段着色器，并使用 TBN 矩阵将采样法线从切线空间变换到世界空间；然后法线与其他照明变量位于同一空间中。
+
+   ​		我们从法线贴图采样得来的法线向量，是在切线空间表示的，尽管其他光照向量都是在世界空间表示的。把TBN传给像素着色器，我们就能将采样得来的切线空间的法线乘以这个TBN矩阵，将法线向量变换到和其他光照向量一样的参考空间中。这种方式随后所有光照计算都可以简单的理解。
+
+   ```glsl
+   out VS_OUT {
+       vec3 FragPos;
+       vec2 TexCoords;
+       mat3 TBN;
+   } vs_out;  
+   
+   void main()
+   {
+       [...]
+       vs_out.TBN = mat3(T, B, N);
+   }
+   ```
+
+   在像素着色器中我们用mat3作为输入变量：
+
+   ```glsl
+   in VS_OUT {
+       vec3 FragPos;
+       vec2 TexCoords;
+       mat3 TBN;
+   } fs_in;
+   ```
+
+   有了TBN矩阵我们现在就可以更新法线贴图代码，引入切线到世界空间变换：
+
+   ```glsl
+   normal = texture(normalMap, fs_in.TexCoords).rgb;
+   normal = normalize(normal * 2.0 - 1.0);   
+   normal = normalize(fs_in.TBN * normal);
+   ```
+
+   因为最后的normal现在在世界空间中了，就不用改变其他像素着色器的代码了，因为光照代码就是假设法线向量在世界空间中。
+
+2. 使用TBN矩阵的逆矩阵，这个矩阵可以把世界坐标空间的向量转换到切线坐标空间。因此我们使用这个矩阵左乘其他光照变量，把他们转换到切线空间，这样法线和其他光照变量再一次在一个坐标系中了。
+
+   ​		我们用TBN矩阵的逆矩阵将所有相关的世界空间向量转变到采样所得法线向量的空间：切线空间。TBN的建构还是一样，但我们在将其发送给像素着色器之前先要求逆矩阵：
+
+   ```glsl
+   vs_out.TBN = transpose(mat3(T, B, N));
+   ```
+
+   ​		**注意，这里我们使用transpose函数，而不是inverse函数。正交矩阵（每个轴既是单位向量同时相互垂直）的一大属性是一个正交矩阵的置换矩阵与它的逆矩阵相等。这个属性很重要因为逆矩阵的求得比求置换开销大；结果却是一样的。**
+
+   在像素着色器中我们不用对法线向量变换，但我们要把其他相关向量转换到切线空间，它们是lightDir和viewDir。这样每个向量还是在同一个空间（切线空间）中了。
+
+   ```glsl
+   void main()
+   {           
+       vec3 normal = texture(normalMap, fs_in.TexCoords).rgb;
+       normal = normalize(normal * 2.0 - 1.0);   
+   
+       vec3 lightDir = fs_in.TBN * normalize(lightPos - fs_in.FragPos);
+       vec3 viewDir  = fs_in.TBN * normalize(viewPos - fs_in.FragPos);    
+       [...]
+   }
+   ```
+
+   ​		第二种方法看似要做的更多，它还需要在像素着色器中进行更多的乘法操作，所以为何还用第二种方法呢？
+
+   ​		将向量从世界空间转换到切线空间有个额外好处，我们可以把所有相关向量在顶点着色器中转换到切线空间，不用在像素着色器中做这件事。这是可行的，因为lightPos和viewPos不是每个fragment运行都要改变，对于fs_in.FragPos，我们也可以**在顶点着色器计算它的切线空间位置**。基本上，不需要把任何向量在像素着色器中进行变换，而第一种方法中就是必须的，因为采样出来的法线向量对于每个像素着色器都不一样。
+
+   ​		所以现在不是把TBN矩阵的逆矩阵发送给像素着色器，而是将切线空间的光源位置，观察位置以及顶点位置发送给像素着色器。这样我们就不用在像素着色器里进行矩阵乘法了。这是一个极佳的优化，因为顶点着色器通常比像素着色器运行的少。这也是为什么这种方法是一种更好的实现方式的原因。
+
+   ```glsl
+   out VS_OUT {
+       vec3 FragPos;
+       vec2 TexCoords;
+       vec3 TangentLightPos;
+       vec3 TangentViewPos;
+       vec3 TangentFragPos;
+   } vs_out;
+   
+   uniform vec3 lightPos;
+   uniform vec3 viewPos;
+   
+   [...]
+   
+   void main()
+   {    
+       [...]
+       mat3 TBN = transpose(mat3(T, B, N));
+       vs_out.TangentLightPos = TBN * lightPos;
+       vs_out.TangentViewPos  = TBN * viewPos;
+       vs_out.TangentFragPos  = TBN * vec3(model * vec4(position, 0.0));
+   }
+   ```
+
+   ​		在像素着色器中我们使用这些新的输入变量来计算切线空间的光照。因为法线向量已经在切线空间中了，光照就有意义了。
+
+   ​		将法线贴图应用到切线空间上，我们会得到混合教程一开始那个例子相似的结果，但这次我们可以将平面朝向各个方向，光照一直都会是正确的：
+
+   ```c++
+   glm::mat4 model;
+   model = glm::rotate(model, (GLfloat)glfwGetTime() * -10, glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+   glUniformMatrix4fv(modelLoc 1, GL_FALSE, glm::value_ptr(model));
+   RenderQuad();
+   ```
+
+### 4.复杂物体
+
+（1）Assimp有个很有用的配置，在我们加载模型的时候调用aiProcess_CalcTangentSpace。当aiProcess_CalcTangentSpace应用到Assimp的ReadFile函数时，Assimp会为每个加载的顶点计算出柔和的切线和副切线向量，它所使用的方法和我们本教程使用的类似。
+
+```c++
+const aiScene* scene = importer.ReadFile(
+    path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace
+);
+```
+
+（2）我们可以通过下面的代码用Assimp获取计算出来的切线空间：
+
+```c++
+vector.x = mesh->mTangents[i].x;
+vector.y = mesh->mTangents[i].y;
+vector.z = mesh->mTangents[i].z;
+vertex.Tangent = vector;
+```
+
+（3）然后，你还必须更新模型加载器，用以从带纹理模型中加载法线贴图。wavefront的模型格式（.obj）导出的法线贴图有点不一样，Assimp的aiTextureType_NORMAL并不会加载它的法线贴图，而aiTextureType_HEIGHT却能，所以我们经常这样加载它们：
+
+```c++
+vector<Texture> specularMaps = this->loadMaterialTextures(
+    material, aiTextureType_HEIGHT, "texture_normal"
+);
+```
+
+### 5.最后一件事
+
+​		当在共享大量顶点的较大网格上计算切向量时，通常会对切向量进行平均以给出良好且平滑的结果。这种方法的一个问题是三个 TBN 向量最终可能会不垂直，这意味着生成的 TBN 矩阵将不再是正交的。使用非正交 TBN 矩阵时，法线贴图只会略有偏差，但我们仍然可以改进。
+
+​		使用称为格拉姆-施密特过程， 我们可以重新正交化TBN 向量，使得每个向量再次垂直于其他向量。在顶点着色器中我们会这样做：
+
+```glsl
+vec3 T = normalize(vec3(model * vec4(aTangent, 0.0)));
+vec3 N = normalize(vec3(model * vec4(aNormal, 0.0)));
+// re-orthogonalize T with respect to N
+T = normalize(T - dot(T, N) * N);
+// then retrieve perpendicular vector B with the cross product of T and N
+vec3 B = cross(N, T);
+
+mat3 TBN = mat3(T, B, N)  
+```
+
+## (五)视差贴图
+
+​		视差贴图属于位移贴图(Displacement Mapping)技术的一种，它对根据储存在纹理中的几何信息对顶点进行位移或偏移。一种实现的方式是比如有1000个顶点，根据纹理中的数据对平面特定区域的顶点的高度进行位移。这样的每个纹理像素包含了高度值纹理叫做高度贴图。一张简单的砖块表面的高度贴图如下所示：
+
+![img](/parallax_mapping_height_map.png)
+
+整个平面上的每个顶点都根据从高度贴图采样出来的高度值进行位移，根据材质的几何属性平坦的平面变换成凹凸不平的表面。例如一个平坦的平面利用上面的高度贴图进行置换能得到以下结果：
+
+![img](/parallax_mapping_plane_heightmap.png)
+
+​		**视差贴图背后的思想是修改纹理坐标使一个fragment的表面看起来比实际的更高或者更低，所有这些都根据观察方向和高度贴图。**
+
+### 1.视差映射
+
+我们将使用一个简单的2D平面，在把它发送给GPU之前我们先计算它的切线和副切线向量；和法线贴图教程做的差不多。我们将向平面贴[漫反射纹理](https://learnopengl.com/img/textures/bricks2.jpg)、一个[法线贴图](https://learnopengl.com/img/textures/bricks2_normal.jpg)和一个[置换贴图](https://learnopengl.com/img/textures/bricks2_disp.jpg)，
+
+上面面链接的置换贴图是本章开头显示的高度图的反面。通过视差贴图，使用高度图的倒数更有意义，因为在平面上伪造深度比伪造高度更容易。
+
+（1）视差贴图是在片段着色器中实现的，因为整个三角形表面的位移效果都不同。在片段着色器中，我们需要计算片段到视图的方向向量在¯在¯所以我们需要切线空间中的视图位置和片段位置。在法线贴图章节中，我们已经有了一个顶点着色器，它在切线空间中发送这些向量，因此我们可以获取该章顶点着色器的精确副本：
+
+```
+#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec2 aTexCoords;
+layout (location = 3) in vec3 aTangent;
+layout (location = 4) in vec3 aBitangent;
+
+out VS_OUT {
+    vec3 FragPos;
+    vec2 TexCoords;
+    vec3 TangentLightPos;
+    vec3 TangentViewPos;
+    vec3 TangentFragPos;
+} vs_out;
+
+uniform mat4 projection;
+uniform mat4 view;
+uniform mat4 model;
+
+uniform vec3 lightPos;
+uniform vec3 viewPos;
+
+void main()
+{
+    gl_Position      = projection * view * model * vec4(aPos, 1.0);
+    vs_out.FragPos   = vec3(model * vec4(aPos, 1.0));   
+    vs_out.TexCoords = aTexCoords;    
+    
+    vec3 T   = normalize(mat3(model) * aTangent);
+    vec3 B   = normalize(mat3(model) * aBitangent);
+    vec3 N   = normalize(mat3(model) * aNormal);
+    mat3 TBN = transpose(mat3(T, B, N));
+
+    vs_out.TangentLightPos = TBN * lightPos;
+    vs_out.TangentViewPos  = TBN * viewPos;
+    vs_out.TangentFragPos  = TBN * vs_out.FragPos;
+}   
+```
+
+（2）然后，我们在片段着色器中实现视差映射逻辑。片段着色器看起来有点像这样：
+
+```glsl
+#version 330 core
+out vec4 FragColor;
+
+in VS_OUT {
+    vec3 FragPos;
+    vec2 TexCoords;
+    vec3 TangentLightPos;
+    vec3 TangentViewPos;
+    vec3 TangentFragPos;
+} fs_in;
+
+uniform sampler2D diffuseMap;
+uniform sampler2D normalMap;
+uniform sampler2D depthMap;
+  
+uniform float height_scale;
+  
+vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir);
+  
+void main()
+{           
+    // offset texture coordinates with Parallax Mapping
+    vec3 viewDir   = normalize(fs_in.TangentViewPos - fs_in.TangentFragPos);
+    vec2 texCoords = ParallaxMapping(fs_in.TexCoords,  viewDir);
+
+    // then sample textures with new texture coords
+    vec3 diffuse = texture(diffuseMap, texCoords);
+    vec3 normal  = texture(normalMap, texCoords);
+    normal = normalize(normal * 2.0 - 1.0);
+    // proceed with lighting code
+    [...]    
+}
+```
+
+（3）我们定义了一个叫做ParallaxMapping的函数，它把fragment的纹理坐标和切线空间中的fragment到观察者的方向向量为输入。这个函数返回经位移的纹理坐标。然后我们使用这些经位移的纹理坐标进行diffuse和法线贴图的采样。最后fragment的diffuse颜色和法线向量就正确的对应于表面的经位移的位置上了。
+
+我们来看看ParallaxMapping函数的内部：
+
+```glsl
+vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
+{ 
+    float height =  texture(depthMap, texCoords).r;    
+    vec2 p = viewDir.xy / viewDir.z * (height * height_scale);
+    return texCoords - p;    
+}
+```
+
+​		本来的纹理坐标texCoords从高度贴图中来采样，得到当前fragment的高度H(A)。然后计算出P，x和y元素在切线空间中，viewDir向量除以它的z元素，用fragment的高度对它进行缩放。我们同时引入额一个height_scale的uniform，来进行一些额外的控制，因为视差效果如果没有一个缩放参数通常会过于强烈。然后我们用P减去纹理坐标来获得最终的经过位移纹理坐标。
+
+![img](/parallax_mapping_depth-1703816658004-65.png)
+
+（3）最后的纹理坐标随后被用来进行采样（diffuse和法线）贴图，下图所展示的位移效果中height_scale等于0.1：
+
+![img](/parallax_mapping.png)
+
+这里你会看到只用法线贴图和与视差贴图相结合的法线贴图的不同之处。因为视差贴图尝试模拟深度，它实际上能够根据你观察它们的方向使砖块叠加到其他砖块上。
+
+在视差贴图的那个平面里你仍然能看到在边上有古怪的失真。原因是在平面的边缘上，纹理坐标超出了0到1的范围进行采样，根据纹理的环绕方式导致了不真实的结果。解决的方法是当它超出默认纹理坐标范围进行采样的时候就丢弃这个fragment：
+
+```glsl
+texCoords = ParallaxMapping(fs_in.TexCoords,  viewDir);
+if(texCoords.x > 1.0 || texCoords.y > 1.0 || texCoords.x < 0.0 || texCoords.y < 0.0)
+    discard;
+```
+
+### 2.陡峭视差贴图
+
+​		陡峭视差映射(Steep Parallax Mapping)是视差映射的扩展，原则是一样的，但不是使用一个样本而是多个样本来确定向量P到B。即使在陡峭的高度变化的情况下，它也能得到更好的结果，原因在于该技术通过增加采样的数量提高了精确性。
+
+（1）陡峭视差映射的基本思想是将总深度范围划分为同一个深度/高度的多个层。从每个层中我们沿着P方向移动采样纹理坐标，直到我们找到一个采样低于当前层的深度值。看看下面的图片：
+
+![img](/parallax_mapping_steep_parallax_mapping_diagram.png)
+
+我们从上到下遍历深度层，我们把每个深度层和储存在深度贴图中的它的深度值进行对比。如果这个层的深度值小于深度贴图的值，就意味着这一层的P向量部分在表面之下。我们继续这个处理过程直到有一层的深度高于储存在深度贴图中的值：这个点就在（经过位移的）表面下方。
+
+（2）为实现这个技术，我们只需要改变ParallaxMapping函数，因为所有需要的变量都有了：
+
+```glsl
+vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
+{ 
+    // number of depth layers
+    const float numLayers = 10;
+    // calculate the size of each layer
+    float layerDepth = 1.0 / numLayers;
+    // depth of current layer
+    float currentLayerDepth = 0.0;
+    // the amount to shift the texture coordinates per layer (from vector P)
+    vec2 P = viewDir.xy * height_scale; 
+    vec2 deltaTexCoords = P / numLayers;
+
+    [...]     
+}
+```
+
+（3）然后我们遍历所有层，从上开始，知道找到小于这一层的深度值的深度贴图值：
+
+```glsl
+// get initial values
+vec2  currentTexCoords     = texCoords;
+float currentDepthMapValue = texture(depthMap, currentTexCoords).r;
+
+while(currentLayerDepth < currentDepthMapValue)
+{
+    // shift texture coordinates along direction of P
+    currentTexCoords -= deltaTexCoords;
+    // get depthmap value at current texture coordinates
+    currentDepthMapValue = texture(depthMap, currentTexCoords).r;  
+    // get depth of next layer
+    currentLayerDepth += layerDepth;  
+}
+
+return currentTexCoords;
+```
+
+这里我们循环每一层深度，直到沿着P¯�¯向量找到第一个返回低于（位移）表面的深度的纹理坐标偏移量。从fragment的纹理坐标减去最后的偏移量，来得到最终的经过位移的纹理坐标向量，这次就比传统的视差映射更精确了。![img](/parallax_mapping_steep_parallax_mapping.png)
+
+（4）我们可以通过对视差贴图的一个属性的利用，对算法进行一点提升。当垂直看一个表面的时候纹理时位移比以一定角度看时的小。我们可以在垂直看时使用更少的样本，以一定角度看时增加样本数量：
+
+```c++
+const float minLayers = 8;
+const float maxLayers = 32;
+float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDir)));
+```
+
+这里我们得到viewDir和正z方向的点乘，使用它的结果根据我们看向表面的角度调整样本数量（注意正z方向等于切线空间中的表面的法线）。如果我们所看的方向平行于表面，我们就是用32层。
+
+你可以在这里找到最新的像素着色器代码。这里也提供木制玩具箱的表面贴图：diffuse、法线、深度。
+
+陡峭视差贴图同样有自己的问题。因为这个技术是基于有限的样本数量的，我们会遇到锯齿效果以及图层之间有明显的断层：
+
+![img](/parallax_mapping_steep_artifact.png)
+
+​		我们可以通过增加样本的方式减少这个问题，但是很快就会花费很多性能。有些旨在修复这个问题的方法：不适用低于表面的第一个位置，而是在两个接近的深度层进行插值找出更匹配B的。
+
+​		两种最流行的解决方法叫做Relief Parallax Mapping和Parallax Occlusion Mapping，Relief Parallax Mapping更精确一些，但是比Parallax Occlusion Mapping性能开销更多。因为Parallax Occlusion Mapping的效果和前者差不多但是效率更高，因此这种方式更经常使用，所以我们将在下面讨论一下。
+
+### 3.视差遮蔽映射
+
+视差遮挡贴图基于与陡峭视差贴图相同的原理，但我们不会在碰撞后获取第一个深度层的纹理坐标，而是在碰撞前后的深度层之间进行线性插值。我们将线性插值的权重基于表面高度与两层深度层值的距离。看一下下面的图片，了解它是如何工作的：
+
+![视差遮挡贴图在 OpenGL 中的工作原理](/parallax_mapping_parallax_occlusion_mapping_diagram.png)
+
+（1）它在很大程度上类似于陡峭视差贴图，作为额外的步骤，在相交点周围的两个深度层的纹理坐标之间进行线性插值。这又是一个近似值，但比陡峭视差贴图准确得多。
+
+视差遮挡贴图的代码是陡峭视差贴图之上的扩展，并且不太困难：
+
+```glsl
+[...] // steep parallax mapping code here
+  
+// get texture coordinates before collision (reverse operations)
+vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+
+// get depth after and before collision for linear interpolation
+float afterDepth  = currentDepthMapValue - currentLayerDepth;
+float beforeDepth = texture(depthMap, prevTexCoords).r - currentLayerDepth + layerDepth;
+ 
+// interpolation of texture coordinates
+float weight = afterDepth / (afterDepth - beforeDepth);
+vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
+
+return finalTexCoords;  
+```
+
+（2）在与（位移的）表面几何体相交后找到深度层后，我们还检索相交之前深度层的纹理坐标。然后，我们计算（移位的）几何体的深度与相应深度层的距离，并在这两个值之间进行插值。线性插值是两个图层的纹理坐标之间的基本插值。然后该函数最终返回最终的插值纹理坐标。
+
+视差遮挡贴图给出了令人惊讶的良好结果，尽管仍然可以看到一些轻微的伪像和锯齿问题，但这通常是一个很好的权衡，并且只有在严重放大或查看非常陡峭的角度时才真正可见。
+
+![OpenGL中视差遮挡贴图的图像](/parallax_mapping_parallax_occlusion_mapping.png)
+
+# 十一、高动态范围
+
+​		默认情况下，亮度和颜色值在存储到帧缓冲区时 被限制在`0.0`和之间。`1.0`这个起初看似无辜的声明导致我们总是在这个范围内的某个地方指定灯光和颜色值，试图使它们适合场景。这工作正常并且给出了不错的结果，但是如果我们走在一个非常明亮的区域，并且有多个明亮光源，并且总和超过，会发生什么`1.0`？答案是，所有亮度或颜色总和超过的片段`1.0`都会被限制在`1.0`，这看起来不太漂亮：
+
+由于大量片段的颜色值被限制为`1.0`，每个明亮片段在大范围内都具有完全相同的白色颜色值，从而丢失了大量细节并使其看起来很假。
+
+解决此问题的方法是降低光源的强度，并确保场景中没有片段区域的亮度超过`1.0`；这不是一个好的解决方案，因为这迫使您使用不切实际的照明参数。更好的方法是允许颜色值暂时超过和作为最后一步 `1.0`将其转换回原始范围，`0.0`但不会丢失细节。`1.0`
+
+`0.0`显示器（非 HDR）仅限于显示和 范围内的颜色`1.0`，但照明方程没有这样的限制。通过允许片段颜色超过，`1.0`我们可以使用更大范围的颜色值，称为**高动态范围（HDR）**。有了高动态范围，亮的东西可以很亮，暗的东西可以很暗，并且两者都可以看到细节。
+
+### 1.HDR(高动态范围)
+
+高动态范围最初仅用于摄影，其中摄影师以不同的曝光级别拍摄同一场景的多张照片，捕获大范围的颜色值。将这些组合形成 HDR 图像，根据组合的曝光级别或查看的特定曝光，可以看到大量细节。例如，下图（由 Colin Smith 提供）在低曝光度下（看窗户）在明亮的区域显示了很多细节，但在高曝光度下这些细节就消失了。然而，高曝光现在可以显示出以前不可见的较暗区域的大量细节。
+
+![显示多个曝光级别及其各自细节的 HDR 图像](/hdr_image.png)
+
+​		这也与人眼的工作原理和高动态范围渲染的基础非常相似。当光线不足时，人眼会进行自我调整，使较暗的部分变得更加可见，对于明亮的区域也是如此。这就像人眼有一个基于场景亮度的自动曝光滑块。
+
+​		高动态范围渲染的工作原理有点像这样。我们允许渲染更大范围的颜色值，收集场景的大范围的黑暗和明亮细节，最后我们将所有 HDR 值转换回低动态范围`0.0`[ , ]的 (LDR) `1.0`。这个将 HDR 值转换为 LDR 值的过程称为色调映射并且存在大量色调映射算法，旨在在转换过程中保留大多数 HDR 细节。这些色调映射算法通常涉及选择性地支持黑暗或明亮区域的曝光参数。
+
+​		当涉及到实时渲染时，高动态范围不仅使我们能够超过 [ `0.0`, ] 的 LDR 范围并保留更多细节，而且还使我们能够通过光源的*真实*`1.0`强度来指定光源的强度。例如，太阳的强度比手电筒之类的东西高得多，所以为什么不这样配置太阳（例如，漫射亮度）。这使我们能够使用更真实的光照参数更正确地配置场景的光照，这是 LDR 渲染不可能实现的，因为它们会直接被限制到. `100.0``1.0`
+
+​		由于（非 HDR）显示器仅显示介于两者之间的颜色`0.0`，因此`1.0`我们确实需要将当前高动态范围的颜色值转换回显示器的范围。简单地用简单的平均值将颜色重新转换回来对我们没有多大好处，因为较亮的区域会变得更加占主导地位。我们可以做的是使用不同的方程和/或曲线将 HDR 值转换回 LDR，从而使我们能够完全控制场景的亮度。这是之前称为色调映射的过程，也是 HDR 渲染的最后一步。
+
+### 2.浮点帧缓存区
+
+​		为了实现高动态范围渲染，我们需要某种方法来防止颜色值在每个片段着色器运行后被限制。当帧缓冲区使用标准化定点颜色格式（如GL_RGB）作为其颜色缓冲区的内部格式时，OpenGL 会自动将值限制在`0.0`和之间，然后`1.0`再将它们存储到帧缓冲区中。此操作适用于大多数类型的帧缓冲区格式（浮点格式除外）。
+
+​		当帧缓冲区的颜色缓冲区的内部格式指定为GL_RGB16F、GL_RGBA16F、GL_RGB32F或GL_RGBA32F时，浮点帧缓冲可以存储超过0.0到1.0范围的浮点值，所以非常适合HDR渲染。
+
+（1）创建浮点帧缓冲区，我们唯一需要更改的是其颜色缓冲区的内部格式参数（注意`GL_FLOAT`参数)：
+
+```c++
+glBindTexture(GL_TEXTURE_2D, colorBuffer);
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);  
+```
+
+默认的帧缓冲默认一个颜色分量只占用8位(bits)。当使用一个使用32位每颜色分量的浮点帧缓冲时(使用`GL_RGB32F` 或者`GL_RGBA32F`)，我们需要四倍的内存来存储这些颜色。所以除非你需要一个非常高的精确度，32位不是必须的，使用`GLRGB16F`就足够了。
+
+（2）有了一个带有浮点颜色缓冲的帧缓冲，我们可以放心渲染场景到这个帧缓冲中。在这个教程的例子当中，我们先渲染一个光照的场景到浮点帧缓冲中，之后再在一个铺屏四边形(Screen-filling Quad)上应用这个帧缓冲的颜色缓冲，代码会是这样子：
+
+```glsl
+glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  
+    // [...] 渲染(光照的)场景
+glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+// 现在使用一个不同的着色器将HDR颜色缓冲渲染至2D铺屏四边形上
+hdrShader.Use();
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, hdrColorBufferTexture);
+RenderQuad();
+```
+
+(3)这里场景的颜色值存在一个可以包含任意颜色值的浮点颜色缓冲中，值可能是超过1.0的。这个简单的演示中，场景被创建为一个被拉伸的立方体通道和四个点光源，其中一个非常亮的在隧道的尽头：
+
+```c++
+std::vector<glm::vec3> lightColors;
+lightColors.push_back(glm::vec3(200.0f, 200.0f, 200.0f));
+lightColors.push_back(glm::vec3(0.1f, 0.0f, 0.0f));
+lightColors.push_back(glm::vec3(0.0f, 0.0f, 0.2f));
+lightColors.push_back(glm::vec3(0.0f, 0.1f, 0.0f));  
+```
+
+（4）渲染至浮点帧缓冲和渲染至一个普通的帧缓冲是一样的。新的东西就是这个的`hdrShader`的片段着色器，用来渲染最终拥有浮点颜色缓冲纹理的2D四边形。我们来定义一个简单的直通片段着色器(Pass-through Fragment Shader)：
+
+```glsl
+#version 330 core
+out vec4 color;
+in vec2 TexCoords;
+
+uniform sampler2D hdrBuffer;
+
+void main()
+{             
+    vec3 hdrColor = texture(hdrBuffer, TexCoords).rgb;
+    color = vec4(hdrColor, 1.0);
+}  
+```
+
+
+
+# 十二、调试
+
+glGetError被调用时，它要么会返回错误标记之一，要么返回无错误。glGetError会返回的错误值如下：
+
+| 标记                             | 代码 | 描述                                              |
+| :------------------------------- | :--- | :------------------------------------------------ |
+| GL_NO_ERROR                      | 0    | 自上次调用glGetError以来没有错误                  |
+| GL_INVALID_ENUM                  | 1280 | 枚举参数不合法                                    |
+| GL_INVALID_VALUE                 | 1281 | 值参数不合法                                      |
+| GL_INVALID_OPERATION             | 1282 | 一个指令的状态对指令的参数不合法                  |
+| GL_STACK_OVERFLOW                | 1283 | 压栈操作造成栈上溢(Overflow)                      |
+| GL_STACK_UNDERFLOW               | 1284 | 弹栈操作时栈在最低点（译注：即栈下溢(Underflow)） |
+| GL_OUT_OF_MEMORY                 | 1285 | 内存调用操作无法调用（足够的）内存                |
+| GL_INVALID_FRAMEBUFFER_OPERATION | 1286 | 读取或写入一个不完整的帧缓冲                      |
+
+
+
+```
+docker run -dit \
+  -v $PWD/ql/data:/ql/data \
+  -p 5700:5700 \
+  -e QlBaseUrl="/" \
+  -e QlPort="5700" \
+  --name qinglong \
+  --hostname qinglong \
+  --restart unless-stopped \
+  whyour/qinglong:latest
+```
+
+
+
 # 几、词汇表
 
 ```tex
